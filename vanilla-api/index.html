@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Laravel API Client</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Laravel API Client</h1>
+
+        <p class="description">
+            Vanilla JavaScript + AJAX + REST API
+        </p>
+
+        <div class="button-group">
+            <button id="loadPostsXHR" class="primary-button">
+                Ielādēt ar XMLHttpRequest
+            </button>
+
+            <button id="loadPostsFetch" class="secondary-button">
+                Ielādēt ar fetch (async/await)
+            </button>
+        </div>
+
+        <div id="status"></div>
+
+        <div id="posts"></div>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
