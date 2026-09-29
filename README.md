@@ -82,3 +82,4 @@ initially I need only two statuses: private and public
 I want to add role management to this app.
 user and role models are connected with pivot table.
 I need to at least two roles that are no hierarchical like guest and admin but that do not completely overlap so that that I can add both roles to some user
+# Laravel-api-fetch
