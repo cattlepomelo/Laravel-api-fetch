@@ -71,6 +71,19 @@ h1::after {
     line-height: 1.6;
 }
 
+.description-highlight {
+    display: inline-block;
+    padding: 2px 9px;
+    border: 1px solid rgb(255 144 0 / 28%);
+    border-radius: 4px;
+    background: rgb(255 144 0 / 8%);
+    color: var(--accent-hover);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.035em;
+    line-height: 1.5;
+}
+
 .button-group {
     display: flex;
     flex-wrap: wrap;
@@ -123,6 +136,25 @@ h1::after {
     color: var(--accent);
 }
 
+.header-watch-corn {
+    flex: 0 0 auto;
+    padding: 9px 12px;
+    border: 1px solid #655020;
+    border-radius: 4px;
+    background: #28210f;
+    color: #ff9900;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.header-watch-corn:hover,
+.header-watch-corn[aria-current="page"] {
+    border-color: #9c7726;
+    background: #352b12;
+}
+
 .header-account {
     display: flex;
     flex: 1;
@@ -158,6 +190,14 @@ h1::after {
     color: var(--accent-hover);
     font-size: 12px;
     font-weight: 800;
+    overflow: hidden;
+}
+
+.header-avatar img,
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .header-signout {
@@ -245,6 +285,12 @@ button:disabled {
     margin: 5px 0 0;
     font-size: 22px;
     letter-spacing: -0.035em;
+}
+
+.generate-joke-button {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 12px;
 }
 
 .eyebrow {
@@ -368,12 +414,106 @@ button:disabled {
     margin: 0;
 }
 
+.composer-statuses {
+    display: grid;
+    gap: 6px;
+}
+
 .posts-section {
     margin-top: 48px;
 }
 
 .profile-page {
     margin-top: 36px;
+}
+
+.age-gate {
+    display: grid;
+    justify-items: start;
+    gap: 14px;
+    margin-top: 36px;
+    padding: clamp(24px, 5vw, 42px);
+    border: 1px solid #655020;
+    border-radius: 7px;
+    background:
+        radial-gradient(ellipse at 0 0, rgb(255 198 67 / 10%), transparent 58%),
+        linear-gradient(145deg, #202019, #181914 72%);
+}
+
+.age-gate h2 {
+    margin: 0;
+    font-size: clamp(24px, 4vw, 32px);
+    letter-spacing: -0.04em;
+}
+
+.age-gate > p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.age-gate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.corn-gallery {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 34px;
+}
+
+.corn-card {
+    overflow: hidden;
+    border: 1px solid #373626;
+    border-radius: 7px;
+    background: linear-gradient(145deg, #20221a, #171914);
+}
+
+.corn-picture {
+    display: grid;
+    min-height: 245px;
+    place-items: center;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 50% 55%, rgb(206 165 53 / 12%), transparent 56%),
+        repeating-linear-gradient(135deg, transparent 0 28px, rgb(122 151 67 / 5%) 29px 30px),
+        #1a1d16;
+}
+
+.corn-illustration {
+    width: min(74%, 180px);
+    height: 220px;
+    filter: drop-shadow(0 14px 13px rgb(0 0 0 / 36%));
+    transition: transform 220ms ease;
+}
+
+.corn-card:hover .corn-illustration {
+    transform: translateY(-5px) rotate(-3deg);
+}
+
+.corn-illustration-1 {
+    transform: rotate(8deg) scale(0.94);
+}
+
+.corn-illustration-2 {
+    transform: rotate(-9deg) scale(1.04);
+}
+
+.corn-illustration-3 {
+    transform: rotate(4deg) scale(0.9);
+}
+
+.corn-card p {
+    margin: 0;
+    padding: 13px 16px 15px;
+    border-top: 1px solid #303126;
+    color: #d5c88f;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .profile-card {
@@ -401,6 +541,7 @@ button:disabled {
     color: var(--accent-hover);
     font-size: 25px;
     font-weight: 800;
+    overflow: hidden;
 }
 
 .profile-details {
@@ -423,6 +564,36 @@ button:disabled {
 .profile-details small {
     color: #888;
     font-size: 12px;
+}
+
+.picture-upload-form {
+    display: grid;
+    max-width: 360px;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.picture-upload-form label {
+    display: grid;
+    gap: 8px;
+    color: #d4d4d4;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.picture-upload-form input {
+    width: 100%;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 12px;
+}
+
+.picture-upload-form button {
+    justify-self: start;
+}
+
+.picture-upload-form .inline-status {
+    margin: 0;
 }
 
 .profile-post-count {
@@ -639,6 +810,11 @@ button:disabled {
         gap: 6px;
     }
 
+    .header-watch-corn {
+        padding: 8px 9px;
+        font-size: 11px;
+    }
+
     .header-user-name {
         display: none;
     }
@@ -674,6 +850,20 @@ button:disabled {
         flex-wrap: wrap;
         gap: 16px;
         padding: 22px;
+    }
+
+    .corn-gallery {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .corn-picture {
+        min-height: 190px;
+    }
+
+    .corn-illustration {
+        height: 175px;
     }
 
     .profile-avatar {
