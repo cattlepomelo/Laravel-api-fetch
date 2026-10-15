@@ -19,6 +19,17 @@ class PostTest extends TestCase
         $this->getJson("/api/posts/{$post->id}")->assertOk()->assertJsonPath('title', $post->title);
     }
 
+    public function test_posts_are_listed_newest_first(): void
+    {
+        $olderPost = Post::factory()->create(['created_at' => now()->subMinute()]);
+        $newerPost = Post::factory()->create(['created_at' => now()]);
+
+        $this->getJson('/api/posts')
+            ->assertOk()
+            ->assertJsonPath('0.id', $newerPost->id)
+            ->assertJsonPath('1.id', $olderPost->id);
+    }
+
     public function test_guest_cannot_create_post(): void
     {
         $this->postJson('/api/posts', ['title' => 'Hi', 'body' => 'Text'])->assertUnauthorized();

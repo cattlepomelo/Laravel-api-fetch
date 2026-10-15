@@ -1,18 +1,120 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 
 const API_URL = "http://localhost:8000/api";
+const AUTH_STORAGE_KEY = "codehub-auth";
 
-async function readJson(response) {
+type Post = {
+    id: number | string;
+    user_id: number | string;
+    title: string;
+    body: string;
+    created_at?: string | null;
+};
+
+type User = {
+    id: number | string;
+    name: string;
+    email: string;
+    profile_picture_url?: string | null;
+    created_at?: string | null;
+};
+
+type Auth = {
+    token: string;
+    user: User;
+};
+
+type Status = {
+    message: string;
+    type: "" | "error" | "success";
+    loading: boolean;
+};
+
+type Credentials = {
+    name: string;
+    email: string;
+    password: string;
+    password_confirmation: string;
+};
+
+type PostDraft = {
+    title: string;
+    body: string;
+};
+
+type ApiPayload = {
+    errors?: Record<string, string | string[]>;
+    message?: string;
+    token?: string;
+    user?: User;
+    id?: number | string;
+    user_id?: number | string;
+    title?: string;
+    body?: string;
+    error?: boolean;
+    type?: string;
+    joke?: string;
+    setup?: string;
+    delivery?: string;
+};
+
+type Page = "feed" | "profile" | "corn";
+type AuthMode = "login" | "register";
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function isUser(value: unknown): value is User {
+    if (typeof value !== "object" || value === null) return false;
+
+    const user = value as Record<string, unknown>;
+    return (typeof user.id === "number" || typeof user.id === "string")
+        && typeof user.name === "string"
+        && typeof user.email === "string"
+        && (user.profile_picture_url === undefined || typeof user.profile_picture_url === "string" || user.profile_picture_url === null)
+        && (user.created_at === undefined || typeof user.created_at === "string" || user.created_at === null);
+}
+
+function isPost(value: ApiPayload): value is ApiPayload & Post {
+    return (typeof value.id === "number" || typeof value.id === "string")
+        && (typeof value.user_id === "number" || typeof value.user_id === "string")
+        && typeof value.title === "string"
+        && typeof value.body === "string";
+}
+
+function readStoredAuth(): Auth | null {
+    const storedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!storedAuth) return null;
+
     try {
-        return await response.json();
+        const value: unknown = JSON.parse(storedAuth);
+        if (typeof value === "object" && value !== null) {
+            const candidate = value as Record<string, unknown>;
+            if (typeof candidate.token === "string" && isUser(candidate.user)) {
+                return { token: candidate.token, user: candidate.user };
+            }
+        }
+    } catch (error) {
+        console.error("Unable to read the saved sign-in session.", error);
+    }
+
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    return null;
+}
+
+async function readJson(response: Response): Promise<ApiPayload> {
+    try {
+        return await response.json() as ApiPayload;
     } catch {
         return {};
     }
 }
 
-function getErrorMessage(payload, fallback) {
+function getErrorMessage(payload: ApiPayload, fallback: string): string {
     const validationErrors = payload.errors
         ? Object.values(payload.errors).flat().join(" ")
         : "";
@@ -20,14 +122,14 @@ function getErrorMessage(payload, fallback) {
     return validationErrors || payload.message || fallback;
 }
 
-function newestFirst(items) {
+function newestFirst(items: Post[]): Post[] {
     return [...items].sort((a, b) => {
         const createdAtDifference = (Date.parse(b.created_at ?? "") || 0) - (Date.parse(a.created_at ?? "") || 0);
         return createdAtDifference || Number(b.id) - Number(a.id);
     });
 }
 
-function CornIllustration({ variant }) {
+function CornIllustration({ variant }: { variant: number }) {
     const kernelRows = Array.from({ length: 8 }, (_, row) => (
         Array.from({ length: 4 }, (_, column) => ({
             cx: 70 + column * 13 + (row % 2) * 6,
@@ -58,21 +160,21 @@ function CornIllustration({ variant }) {
 }
 
 function App() {
-    const [status, setStatus] = useState({ message: "", type: "", loading: false });
-    const [posts, setPosts] = useState([]);
+    const [status, setStatus] = useState<Status>({ message: "", type: "", loading: false });
+    const [posts, setPosts] = useState<Post[]>([]);
     const [postsLoaded, setPostsLoaded] = useState(false);
-    const [auth, setAuth] = useState(null);
-    const [activePage, setActivePage] = useState(
-        ["#feed", "#profile", "#corn"].includes(window.location.hash) ? window.location.hash.slice(1) : "feed",
+    const [auth, setAuth] = useState<Auth | null>(readStoredAuth);
+    const [activePage, setActivePage] = useState<Page>(
+        ["#feed", "#profile", "#corn"].includes(window.location.hash) ? window.location.hash.slice(1) as Page : "feed",
     );
     const [cornAgeConfirmed, setCornAgeConfirmed] = useState(false);
-    const [authMode, setAuthMode] = useState("login");
-    const [credentials, setCredentials] = useState({ name: "", email: "", password: "", password_confirmation: "" });
-    const [authStatus, setAuthStatus] = useState({ message: "", type: "", loading: false });
-    const [postStatus, setPostStatus] = useState({ message: "", type: "", loading: false });
-    const [jokeStatus, setJokeStatus] = useState({ message: "", type: "", loading: false });
-    const [postDraft, setPostDraft] = useState({ title: "", body: "" });
-    const [pictureStatus, setPictureStatus] = useState({ message: "", type: "", loading: false });
+    const [authMode, setAuthMode] = useState<AuthMode>("login");
+    const [credentials, setCredentials] = useState<Credentials>({ name: "", email: "", password: "", password_confirmation: "" });
+    const [authStatus, setAuthStatus] = useState<Status>({ message: "", type: "", loading: false });
+    const [postStatus, setPostStatus] = useState<Status>({ message: "", type: "", loading: false });
+    const [jokeStatus, setJokeStatus] = useState<Status>({ message: "", type: "", loading: false });
+    const [postDraft, setPostDraft] = useState<PostDraft>({ title: "", body: "" });
+    const [pictureStatus, setPictureStatus] = useState<Status>({ message: "", type: "", loading: false });
 
     function loadPostsWithXHR() {
         setStatus({ message: "XMLHttpRequest: ielādē datus...", type: "", loading: true });
@@ -85,7 +187,7 @@ function App() {
                 return;
             }
             try {
-                const data = JSON.parse(xhr.responseText);
+                const data = JSON.parse(xhr.responseText) as Post[];
                 setPosts(newestFirst(data));
                 setPostsLoaded(true);
                 setStatus({ message: `XMLHttpRequest: saņemti ${data.length} ieraksti.`, type: "success", loading: false });
@@ -106,12 +208,12 @@ function App() {
                 headers: { Accept: "application/json" },
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
+            const data = await response.json() as Post[];
             setPosts(newestFirst(data));
             setPostsLoaded(true);
             setStatus({ message: `fetch: saņemti ${data.length} ieraksti.`, type: "success", loading: false });
         } catch (error) {
-            setStatus({ message: `fetch: neizdevās ielādēt datus. ${error.message}`, type: "error", loading: false });
+            setStatus({ message: `fetch: neizdevās ielādēt datus. ${errorMessage(error)}`, type: "error", loading: false });
         }
     }
 
@@ -127,12 +229,55 @@ function App() {
     }, [auth]);
 
     useEffect(() => {
+        const savedAuth = readStoredAuth();
+        if (!savedAuth) return;
+        const authToValidate: Auth = savedAuth;
+
+        let cancelled = false;
+        async function validateSavedAuth() {
+            try {
+                const response = await fetch(`${API_URL}/user`, {
+                    headers: {
+                        Accept: "application/json",
+                        Authorization: `Bearer ${authToValidate.token}`,
+                    },
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem(AUTH_STORAGE_KEY);
+                    if (!cancelled) setAuth(null);
+                    return;
+                }
+                if (!response.ok) throw new Error(`Unable to restore session (HTTP ${response.status}).`);
+
+                const data = await readJson(response);
+                if (!isUser(data)) throw new Error("API returned an invalid user.");
+
+                if (!cancelled) {
+                    const restoredAuth = { ...authToValidate, user: data };
+                    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(restoredAuth));
+                    setAuth(restoredAuth);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setAuthStatus({ message: `Unable to verify saved session: ${errorMessage(error)}`, type: "error", loading: false });
+                }
+            }
+        }
+
+        void validateSavedAuth();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
         if (activePage === "profile" && auth && !postsLoaded) {
             loadPostsWithFetch();
         }
     }, [activePage, auth, postsLoaded]);
 
-    async function handleAuthSubmit(event) {
+    async function handleAuthSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const registering = authMode === "register";
         setAuthStatus({ message: registering ? "Creating account..." : "Signing in...", type: "", loading: true });
@@ -150,11 +295,13 @@ function App() {
             });
             const data = await readJson(response);
 
-            if (!response.ok || !data.token) {
+            if (!response.ok || !data.token || !isUser(data.user)) {
                 throw new Error(getErrorMessage(data, registering ? "Neizdevās izveidot kontu." : "Neizdevās pieslēgties."));
             }
 
-            setAuth({ token: data.token, user: data.user });
+            const nextAuth = { token: data.token, user: data.user };
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
+            setAuth(nextAuth);
             setCredentials((current) => ({ ...current, password: "", password_confirmation: "" }));
             setAuthStatus({
                 message: registering ? `Account created. Signed in as ${data.user.name}.` : `Signed in as ${data.user.name}.`,
@@ -162,7 +309,7 @@ function App() {
                 loading: false,
             });
         } catch (error) {
-            setAuthStatus({ message: error.message, type: "error", loading: false });
+            setAuthStatus({ message: errorMessage(error), type: "error", loading: false });
         }
     }
 
@@ -170,11 +317,14 @@ function App() {
         setAuthStatus({ message: "Atteicas...", type: "", loading: true });
 
         try {
+            const currentAuth = auth;
+            if (!currentAuth) throw new Error("You must be signed in to sign out.");
+
             const response = await fetch(`${API_URL}/logout`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${currentAuth.token}`,
                 },
             });
             const data = await readJson(response);
@@ -184,39 +334,44 @@ function App() {
             }
 
             window.location.hash = "feed";
+            localStorage.removeItem(AUTH_STORAGE_KEY);
             setAuth(null);
             setAuthStatus({ message: "Jūs esat atteicies.", type: "success", loading: false });
         } catch (error) {
-            setAuthStatus({ message: error.message, type: "error", loading: false });
+            setAuthStatus({ message: errorMessage(error), type: "error", loading: false });
         }
     }
 
-    async function handleProfilePictureSubmit(event) {
+    async function handleProfilePictureSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         const form = event.currentTarget;
         const formData = new FormData(form);
         setPictureStatus({ message: "Uploading picture...", type: "", loading: true });
 
         try {
+            const currentAuth = auth;
+            if (!currentAuth) throw new Error("You must be signed in to upload a profile picture.");
+
             const response = await fetch(`${API_URL}/user/profile-picture`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${currentAuth.token}`,
                 },
                 body: formData,
             });
             const data = await readJson(response);
 
-            if (!response.ok || !data.user) {
+            if (!response.ok || !isUser(data.user)) {
                 throw new Error(getErrorMessage(data, `Unable to upload picture (HTTP ${response.status}).`));
             }
 
-            setAuth((current) => current ? { ...current, user: data.user } : current);
+            const user = data.user;
+            setAuth((current) => current ? { ...current, user } : current);
             form.reset();
             setPictureStatus({ message: "Profile picture updated.", type: "success", loading: false });
         } catch (error) {
-            setPictureStatus({ message: error.message, type: "error", loading: false });
+            setPictureStatus({ message: errorMessage(error), type: "error", loading: false });
         }
     }
 
@@ -246,21 +401,24 @@ function App() {
             setPostDraft({ title: "Programming joke", body });
             setJokeStatus({ message: "Joke added to your draft. Edit it or publish when ready.", type: "success", loading: false });
         } catch (error) {
-            setJokeStatus({ message: `Unable to generate a joke: ${error.message}`, type: "error", loading: false });
+            setJokeStatus({ message: `Unable to generate a joke: ${errorMessage(error)}`, type: "error", loading: false });
         }
     }
 
-    async function handleCreatePost(event) {
+    async function handleCreatePost(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
         setPostStatus({ message: "Publicē ierakstu...", type: "", loading: true });
 
         try {
+            const currentAuth = auth;
+            if (!currentAuth) throw new Error("You must be signed in to create a post.");
+
             const response = await fetch(`${API_URL}/posts`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${currentAuth.token}`,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
@@ -273,6 +431,9 @@ function App() {
             if (!response.ok) {
                 throw new Error(getErrorMessage(data, `Neizdevās izveidot ierakstu (HTTP ${response.status}).`));
             }
+            if (!isPost(data)) {
+                throw new Error("API returned an invalid post.");
+            }
 
             setPosts((current) => newestFirst([data, ...current.filter((post) => post.id !== data.id)]));
             setPostsLoaded(true);
@@ -280,7 +441,7 @@ function App() {
             setJokeStatus({ message: "", type: "", loading: false });
             setPostStatus({ message: "Ieraksts veiksmīgi izveidots.", type: "success", loading: false });
         } catch (error) {
-            setPostStatus({ message: error.message, type: "error", loading: false });
+            setPostStatus({ message: errorMessage(error), type: "error", loading: false });
         }
     }
 
@@ -288,11 +449,11 @@ function App() {
         ? newestFirst(posts.filter((post) => String(post.user_id) === String(auth.user.id)))
         : [];
 
-    function confirmCornAge() {
+    function confirmCornAge(): void {
         setCornAgeConfirmed(true);
     }
 
-    function leaveCornPage() {
+    function leaveCornPage(): void {
         window.location.hash = "feed";
         setActivePage("feed");
     }
@@ -352,7 +513,7 @@ function App() {
                                         type="text"
                                         name="name"
                                         autoComplete="name"
-                                        maxLength="255"
+                                        maxLength={255}
                                         required
                                         value={credentials.name}
                                         onChange={(event) => setCredentials((current) => ({ ...current, name: event.target.value }))}
@@ -442,7 +603,7 @@ function App() {
                                 <input
                                     type="text"
                                     name="title"
-                                    maxLength="255"
+                                    maxLength={255}
                                     placeholder="Give your post a title"
                                     value={postDraft.title}
                                     onChange={(event) => setPostDraft((current) => ({ ...current, title: event.target.value }))}
@@ -453,7 +614,7 @@ function App() {
                                 Post
                                 <textarea
                                     name="body"
-                                    rows="5"
+                                    rows={5}
                                     placeholder="What would you like to share?"
                                     value={postDraft.body}
                                     onChange={(event) => setPostDraft((current) => ({ ...current, body: event.target.value }))}
@@ -613,4 +774,6 @@ function App() {
     );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Root element not found.");
+createRoot(rootElement).render(<App />);

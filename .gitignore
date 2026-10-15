@@ -1,5 +1,7 @@
 /.phpunit.cache
 /node_modules
+/vanilla-api/node_modules
+/vanilla-api/dist
 /public/build
 /public/hot
 /public/storage

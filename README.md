@@ -82,4 +82,24 @@ initially I need only two statuses: private and public
 I want to add role management to this app.
 user and role models are connected with pivot table.
 I need to at least two roles that are no hierarchical like guest and admin but that do not completely overlap so that that I can add both roles to some user
+
+## Profile pictures
+
+Authenticated users can upload or replace their own profile picture with
+`POST /api/user/profile-picture`, using a multipart form field named
+`profile_picture`. JPEG, PNG, and WebP images up to 2 MB are accepted. The API
+returns the updated user with a `profile_picture_url`; profile images are stored
+on Laravel's public disk.
+
+Run `php artisan migrate` and, for local development, `php artisan storage:link`
+to make uploaded images accessible. Set `APP_URL` to the URL where Laravel is
+served (for example, `http://localhost:8000`) so profile-picture URLs point to
+the API server rather than the frontend's origin.
+
+## Programming joke drafts
+
+The post composer can fetch a safe-mode programming joke from JokeAPI and fill
+the editable title and body fields. Generating a joke does not create a post;
+the user can edit the draft and publish it explicitly.
+
 # Laravel-api-fetch

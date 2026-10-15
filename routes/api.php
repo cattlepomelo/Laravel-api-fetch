@@ -1,12 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\RoleMiddleware;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -21,6 +21,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('user/profile-picture', [UserController::class, 'updateProfilePicture']);
     Route::post('users/{user}/assign-role', [UserController::class, 'assignRole']);
     Route::post('users/{user}/remove-role', [UserController::class, 'removeRole']);
 });

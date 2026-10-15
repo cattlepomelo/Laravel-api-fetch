@@ -21,7 +21,7 @@ class PostController extends Controller implements HasMiddleware
      */
     public function index()
     {
-        return Post::all();
+        return Post::orderByDesc('created_at')->orderByDesc('id')->get();
     }
 
     /**
